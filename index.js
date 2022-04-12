@@ -3,8 +3,11 @@ const express = require('express');
 const app = express();
 const crypto = require('crypto');
 const cookie = require('cookie');
-const nonce = require('nonce');
-const queryString = require('querystring');
+/**
+ * Don't forget to invoke nonce
+ */
+const nonce = require('nonce')();
+const querystring = require('querystring');
 const request = require('request-promise');
 
 const apiKey = process.env.SHOPIFY_API_KEY;
@@ -46,6 +49,42 @@ app.get('/shopify', (req, res) => {
     } else {
         return res.status(400)
             .send('Missing shop parameter. Please add ?shop=your-shop to your request.');
+    }
+});
+
+app.get('/shopify/callback', (req, res) => {
+    /** Query parameters that Shopify will send to us */
+    const { shop, hmac, code, state } = req.query;
+
+    /** decrypt cookie in real world */
+    const stateCookie = cookie.parse(req.headers.cookie).state;
+
+    /** state from /shopify should match the state here **/
+    if (state !== stateCookie) {
+        return res.status(403).send('Request origin cannot be verified');
+    }
+
+    if (shop && hmac && code) {
+        /**
+         * hmac validation
+         * We need to calculate a signature using the query params we received
+         * To validate the signature, it should match the one Shopify provided
+         */
+        const map = Object.assign({}, req.query);
+        delete map['hmac'];
+        const message = querystring.stringify(map);
+        const generatedHash = crypto
+            .createHmac('sha256', apiSecret)
+            .update(message)
+            .digest('hex');
+
+        if(generatedHash !== hmac) {
+            return res.status(400).send('HMAC validation failed!');
+        }
+
+        return res.status(200).send('HMAC validated');
+    } else {
+        res.status(400).send('Required parameters missing.');
     }
 });
 
