@@ -45,7 +45,7 @@ app.get('/shopify', (req, res) => {
          * Should be encrypted in real world
          */
         res.cookie('state', state);
-        res.redirect(installUrl);
+        res.send({ installUrl });
     } else {
         return res.status(400)
             .send('Missing shop parameter. Please add ?shop=your-shop to your request.');
@@ -98,7 +98,7 @@ app.get('/shopify/callback', (req, res) => {
                 const accessToken = accessTokenResponse.access_token;
 
                 /** Basic API call */
-                const apiRequestUrl = `https://${shop}/admin/shop.json`;
+                const apiRequestUrl = `https://${shop}/admin/products.json`;
                 const shopRequestHeader = {
                     'X-Shopify-Access-Token': accessToken,
                 }
@@ -118,6 +118,6 @@ app.get('/shopify/callback', (req, res) => {
     }
 });
 
-app.listen(3000, () => {
-    console.log('listening to port 3000')
+app.listen(8080, () => {
+    console.log('listening to port 8080')
 });
