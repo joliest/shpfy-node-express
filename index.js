@@ -3,6 +3,7 @@ const express = require('express');
 const app = express();
 const crypto = require('crypto');
 const cookie = require('cookie');
+const cors = require('cors');
 /**
  * Don't forget to invoke nonce
  */
@@ -14,7 +15,7 @@ const apiKey = process.env.SHOPIFY_API_KEY;
 const apiSecret = process.env.SHOPIFY_API_SECRET;
 const scopes = 'write_products';
 const forwardingAddress = process.env.NGROK_ADDR;
-
+app.use(cors());
 app.get('/shopify', (req, res) => {
     const shop = req.query.shop;
     if (shop) {
