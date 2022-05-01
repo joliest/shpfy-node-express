@@ -15,6 +15,7 @@ const apiKey = process.env.SHOPIFY_API_KEY;
 const apiSecret = process.env.SHOPIFY_API_SECRET;
 const scopes = 'write_products';
 const forwardingAddress = process.env.NGROK_ADDR;
+const frontEndAddress = process.env.FRONT_END_ADDR;
 app.use(cors());
 app.get('/shopify', (req, res) => {
     const shop = req.query.shop;
@@ -46,7 +47,8 @@ app.get('/shopify', (req, res) => {
          * Should be encrypted in real world
          */
         res.cookie('state', state);
-        res.send({ installUrl });
+        // res.send({ installUrl });
+        res.redirect(installUrl)
     } else {
         return res.status(400)
             .send('Missing shop parameter. Please add ?shop=your-shop to your request.');
@@ -94,26 +96,29 @@ app.get('/shopify/callback', (req, res) => {
             code,
         }
 
-        request.post(accessTokenRequestUrl, { json: accessTokenPayload })
-            .then((accessTokenResponse) => {
-                const accessToken = accessTokenResponse.access_token;
+        // redirect back to front end landing page
+        res.redirect(frontEndAddress)
 
-                /** Basic API call */
-                const apiRequestUrl = `https://${shop}/admin/products.json`;
-                const shopRequestHeader = {
-                    'X-Shopify-Access-Token': accessToken,
-                }
-                request.get(apiRequestUrl, { headers: shopRequestHeader })
-                    .then((apiResponse) => {
-                        res.end(apiResponse)
-                    })
-                    .catch((error) => {
-                        res.status(error.statusCode).send(error.error.errors)
-                    })
-            })
-            .catch((e) => {
-                res.status(e.statusCode).send(e.error.errors);
-            })
+        // request.post(accessTokenRequestUrl, { json: accessTokenPayload })
+        //     .then((accessTokenResponse) => {
+        //         const accessToken = accessTokenResponse.access_token;
+        //
+        //         /** Basic API call */
+        //         const apiRequestUrl = `https://${shop}/admin/products.json`;
+        //         const shopRequestHeader = {
+        //             'X-Shopify-Access-Token': accessToken,
+        //         }
+        //         request.get(apiRequestUrl, { headers: shopRequestHeader })
+        //             .then((apiResponse) => {
+        //                 res.end(apiResponse)
+        //             })
+        //             .catch((error) => {
+        //                 res.status(error.statusCode).send(error.error.errors)
+        //             })
+        //     })
+        //     .catch((e) => {
+        //         res.status(e.statusCode).send(e.error.errors);
+        //     })
     } else {
         res.status(400).send('Required parameters missing.');
     }
