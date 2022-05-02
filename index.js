@@ -114,27 +114,39 @@ app.get('/shopify/callback', (req, res) => {
         }
 
         // redirect back to front end landing page
-        const redirectUrl = `${frontEndAddress}?hasExistingToken=${existingToken}`;
-        res.redirect(redirectUrl);
-
-        // /** Basic API call */
-        // const apiRequestUrl = `https://${shop}/admin/products.json`;
-        // const shopRequestHeader = {
-        //     'X-Shopify-Access-Token': accessToken,
-        // }
-        // request.get(apiRequestUrl, { headers: shopRequestHeader })
-        //     .then((apiResponse) => {
-        //         res.end(apiResponse)
-        //     })
-        //     .catch((error) => {
-        //         res.status(error.statusCode).send(error.error.errors)
-        //     })
+        res.redirect(frontEndAddress);
     } else {
         res.status(400).send('Required parameters missing.');
     }
 });
 
+// retrieve products
+app.get('/products', (req, res) => {
+    /** we can retrieve this in jwt token or request body in real world */
+    const { shop } = req.query
+    if (!shop) {
+        return res.status(400).send({ status: 'failed', message: 'Missing shop query param' });
+    }
 
+    const accessToken = store.get('token');
+    if (!!accessToken) {
+        const apiRequestUrl = `https://${shop}/admin/products.json`;
+        const shopRequestHeader = {
+            'X-Shopify-Access-Token': accessToken,
+        }
+        request.get(apiRequestUrl, { headers: shopRequestHeader })
+            .then((apiResponse) => {
+                res.status(200).send(apiResponse)
+            })
+            .catch((error) => {
+                res.status(error.statusCode).send(error.error.errors)
+            })
+    } else {
+        res.status(403).send({ status: 'failed', message: 'Please install the app' })
+    }
+});
+
+// home
 app.get('/', (req, res) => {
     res.redirect(frontEndNgrokAddress)
 });
