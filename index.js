@@ -4,6 +4,7 @@ const app = express();
 const crypto = require('crypto');
 const cookie = require('cookie');
 const cors = require('cors');
+const store = require('store2');
 /**
  * Don't forget to invoke nonce
  */
@@ -47,7 +48,6 @@ app.get('/shopify', (req, res) => {
          * Should be encrypted in real world
          */
         res.cookie('state', state);
-        // res.send({ installUrl });
         res.redirect(installUrl)
     } else {
         return res.status(400)
@@ -96,28 +96,37 @@ app.get('/shopify/callback', (req, res) => {
             code,
         }
 
-        // redirect back to front end landing page
-        res.redirect(frontEndAddress)
+        const existingToken = store('token');
+        if (!existingToken) {
+            /** Generate offline token */
+            request.post(accessTokenRequestUrl, { json: accessTokenPayload })
+                .then((accessTokenResponse) => {
+                    const accessToken = accessTokenResponse.access_token;
 
-        // request.post(accessTokenRequestUrl, { json: accessTokenPayload })
-        //     .then((accessTokenResponse) => {
-        //         const accessToken = accessTokenResponse.access_token;
-        //
-        //         /** Basic API call */
-        //         const apiRequestUrl = `https://${shop}/admin/products.json`;
-        //         const shopRequestHeader = {
-        //             'X-Shopify-Access-Token': accessToken,
-        //         }
-        //         request.get(apiRequestUrl, { headers: shopRequestHeader })
-        //             .then((apiResponse) => {
-        //                 res.end(apiResponse)
-        //             })
-        //             .catch((error) => {
-        //                 res.status(error.statusCode).send(error.error.errors)
-        //             })
+                    /** Store in database in real world */
+                    store('token', accessToken);
+                })
+                .catch((e) => {
+                    res.status(e.statusCode).send(e.error.errors);
+                })
+
+        }
+
+        // redirect back to front end landing page
+        const redirectUrl = `${frontEndAddress}?hasExistingToken=${!!existingToken}`;
+        res.redirect(redirectUrl);
+
+        // /** Basic API call */
+        // const apiRequestUrl = `https://${shop}/admin/products.json`;
+        // const shopRequestHeader = {
+        //     'X-Shopify-Access-Token': accessToken,
+        // }
+        // request.get(apiRequestUrl, { headers: shopRequestHeader })
+        //     .then((apiResponse) => {
+        //         res.end(apiResponse)
         //     })
-        //     .catch((e) => {
-        //         res.status(e.statusCode).send(e.error.errors);
+        //     .catch((error) => {
+        //         res.status(error.statusCode).send(error.error.errors)
         //     })
     } else {
         res.status(400).send('Required parameters missing.');
