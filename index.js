@@ -17,6 +17,7 @@ const apiSecret = process.env.SHOPIFY_API_SECRET;
 const scopes = 'write_products';
 const forwardingAddress = process.env.NGROK_ADDR;
 const frontEndAddress = process.env.FRONT_END_ADDR;
+const frontEndNgrokAddress = process.env.FRONT_END_NGROK;
 app.use(cors());
 app.get('/shopify', (req, res) => {
     const shop = req.query.shop;
@@ -96,7 +97,7 @@ app.get('/shopify/callback', (req, res) => {
             code,
         }
 
-        const existingToken = store('token');
+        const existingToken = store.has('token');
         if (!existingToken) {
             /** Generate offline token */
             request.post(accessTokenRequestUrl, { json: accessTokenPayload })
@@ -113,7 +114,7 @@ app.get('/shopify/callback', (req, res) => {
         }
 
         // redirect back to front end landing page
-        const redirectUrl = `${frontEndAddress}?hasExistingToken=${!!existingToken}`;
+        const redirectUrl = `${frontEndAddress}?hasExistingToken=${existingToken}`;
         res.redirect(redirectUrl);
 
         // /** Basic API call */
@@ -131,6 +132,11 @@ app.get('/shopify/callback', (req, res) => {
     } else {
         res.status(400).send('Required parameters missing.');
     }
+});
+
+
+app.get('/', (req, res) => {
+    res.redirect(frontEndNgrokAddress)
 });
 
 app.listen(8080, () => {
