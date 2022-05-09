@@ -11,6 +11,7 @@ const store = require('store2');
 const nonce = require('nonce')();
 const querystring = require('querystring');
 const request = require('request-promise');
+const {serialize} = require("./util/utils");
 
 const apiKey = process.env.SHOPIFY_API_KEY;
 const apiSecret = process.env.SHOPIFY_API_SECRET;
@@ -123,14 +124,19 @@ app.get('/shopify/callback', (req, res) => {
 // retrieve products
 app.get('/products', (req, res) => {
     /** we can retrieve this in jwt token or request body in real world */
-    const { shop } = req.query
+    const { shop, ...rest } = req.query
     if (!shop) {
         return res.status(400).send({ status: 'failed', message: 'Missing shop query param' });
     }
 
+    const queryParams = serialize(rest);
     const accessToken = store.get('token');
     if (!!accessToken) {
-        const apiRequestUrl = `https://${shop}/admin/products.json`;
+        let apiRequestUrl = `https://${shop}/admin/products.json`;
+        if (queryParams) {
+            apiRequestUrl = `${apiRequestUrl}?${queryParams}`
+        }
+
         const shopRequestHeader = {
             'X-Shopify-Access-Token': accessToken,
         }
