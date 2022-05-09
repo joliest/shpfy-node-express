@@ -106,7 +106,7 @@ app.get('/shopify/callback', (req, res) => {
                     const accessToken = accessTokenResponse.access_token;
 
                     /** Store in database in real world */
-                    store('token', accessToken);
+                    store(shop, accessToken);
                 })
                 .catch((e) => {
                     res.status(e.statusCode).send(e.error.errors);
@@ -115,7 +115,7 @@ app.get('/shopify/callback', (req, res) => {
         }
 
         // redirect back to front end landing page
-        res.redirect(frontEndAddress);
+        res.redirect(`${frontEndAddress}?shop=${shop}`);
     } else {
         res.status(400).send('Required parameters missing.');
     }
@@ -130,7 +130,7 @@ app.get('/products', (req, res) => {
     }
 
     const queryParams = serialize(rest);
-    const accessToken = store.get('token');
+    const accessToken = store.get(shop);
     if (!!accessToken) {
         let apiRequestUrl = `https://${shop}/admin/products.json`;
         if (queryParams) {
